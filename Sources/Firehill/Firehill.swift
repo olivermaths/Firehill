@@ -21,14 +21,11 @@ public class Firehill {
     }
 
     public func run(){
-        let fence = swapChainManager.inFlightFences[0]
-        var imageSemaphore = swapChainManager.imageAvailableSemaphores[0]
-        var renderSemaphore = swapChainManager.renderFinishedSemaphores[0]
         let pointer = swapChainManager.swapChainFrameBuffers.withUnsafeMutableBufferPointer({$0.baseAddress})
 
         while glfwWindowShouldClose(window.pInstance) == 0 {
             collectEvents()
-            drawFrame(fence: fence, renderSemaphore: renderSemaphore, imageSemaphore: imageSemaphore, pointer: pointer)
+            drawFrame(fence: swapChainManager.inFlightFences[0], renderSemaphore: swapChainManager.renderFinishedSemaphores[0], imageSemaphore: swapChainManager.imageAvailableSemaphores[0], pointer: pointer)
         }
         vkDeviceWaitIdle(deviceManager.device);
     }

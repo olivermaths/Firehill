@@ -164,9 +164,34 @@ void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRende
         );
         
         c_assert(vkResetFences(device, 1, &fence) == VK_SUCCESS);
-        submitCommand(commandBuffer, presentQueue, fence, imageSemaphore,renderSemaphore);
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        VkSemaphore imageSemaphores[] = {imageSemaphore};
+        VkSemaphore renderSemaphores[] = {renderSemaphore};
+
+        VkSubmitInfo submitInfo = {
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = imageSemaphores,
+            .pWaitDstStageMask = waitStages,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = renderSemaphores
+        };
+        c_assert(vkQueueSubmit(presentQueue, 1, &submitInfo, fence) == VK_SUCCESS);
         
-        VkPresentInfoKHR presentInfo = fhCreatePresentInfoKHR(swapChain, renderSemaphore, imageIndex);
+        VkSwapchainKHR swaps[] = {swapChain};
+        uint32_t indices[] = {imageIndex};
+        
+        VkPresentInfoKHR presentInfo = {
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = renderSemaphores,
+            .swapchainCount = 1,
+            .pSwapchains = swaps,
+            .pImageIndices = indices,
+            .pResults = 0
+        };
         vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
@@ -193,22 +218,6 @@ VkFence fhCreateFence(VkDevice device){
 }
 
 
-void submitCommand( VkCommandBuffer commandbuffer, VkQueue presentQueue, VkFence fence, VkSemaphore imageSemaphore, VkSemaphore renderSemaphore){
-
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore imageSemaphores[] = {imageSemaphore};
-    VkSubmitInfo submitInfo = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = imageSemaphores,
-        .pWaitDstStageMask = waitStages,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &commandbuffer,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &renderSemaphore
-    };
-    c_assert(vkQueueSubmit(presentQueue, 1, &submitInfo, fence) == VK_SUCCESS);
-}
 
 
 VkPresentInfoKHR fhCreatePresentInfoKHR(VkSwapchainKHR swapChain, VkSemaphore renderSemaphore, uint32_t imageIndex){
