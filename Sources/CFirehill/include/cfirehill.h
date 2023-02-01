@@ -1,54 +1,62 @@
-#include "core.h"
+
+
+#include "pipeline.h"
+
+#include "instance.h"
+#include "device.h"
+#include "swapchain.h"
+
+#include "structs.h"
 #include "cwindow.h"
-#include "vulkan/vulkan_core.h"
-#include <stdint.h>
-
-
-typedef struct FhDeviceManager_t{
-    VkInstance instance;
-    VkPhysicalDevice physicalDevice;
-    VkDevice device;
-    VkSurfaceKHR surface;
-    VkQueue presentQueue;
-} FhDeviceManager;
-
-typedef struct FhPipelineConfig_t{
-    VkRect2D scissor;
-    VkViewport viewPort;
-    VkPipelineViewportStateCreateInfo viewPortInfo;
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-    VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-    VkPipelineMultisampleStateCreateInfo multisampleInfo;
-    VkPipelineColorBlendAttachmentState colorBlendAttachment;
-    VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-    VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-
-} FhPipelineConfig;
-
-typedef struct FhPipeline_t {
-    VkPipeline graphicPipeline;
-    VkShaderModule vertShaders;
-    VkShaderModule fragShaders;
-} FhPipeline;
-
-
-
-FhPipeline* createGraphicsPipeline(
-        const FhDeviceManager *dmanager,
-        VkPipelineLayout layout,
-        VkRenderPass renderPass,
-        uint32_t subpass,
-        uint32_t height, 
-        uint32_t width, 
-        const char *vertexPath, 
-        const char* fragPath);
+#include "helpers.h"
 
 
 
 
-void fhDestroyPipeline(FhPipeline *pipeline, FhDeviceManager *dmanager);
 
-FhDeviceManager *createDeviceManager(GLFWwindow *window);
-void fhDestroyDeviceManager(FhDeviceManager* device);
 
-VkPipelineLayout fhCreatePipelineLayout(VkDevice device);
+//! @brief SwapChain Functions
+VkSwapchainKHR fhCreateSwapChain(
+    VkPhysicalDevice device, 
+    VkDevice logicalDevice, 
+    VkSurfaceKHR surface,
+    VkFormat *format,
+    VkExtent2D *extent,
+    GLFWwindow *window
+);
+
+
+void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRenderPass renderPass, VkFence fence, VkSemaphore renderSemaphore, VkSemaphore imageSemaphore, VkDevice device, VkSwapchainKHR swapChain, VkCommandBuffer commandBuffer, VkFramebuffer *frameBuffers);
+VkImageViewCreateInfo fhCreateImageViewInfo(VkImage image, VkFormat format);
+
+VkRenderPass fhCreateRenderPass(VkDevice device, VkFormat format);
+
+VkFramebufferCreateInfo fhCreateFrameBufferInfo(VkImageView imageView, VkRenderPass renderPass, VkExtent2D extent);
+
+
+
+VkCommandPool  fhCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device);
+
+VkCommandBuffer fhCreateCommandBuffer(VkDevice device, VkCommandPool commandPool);
+
+void fhRecordCommandBuffer(
+    VkPipeline graphicPipeline,
+    VkCommandBuffer commandBuffer, 
+    VkRenderPass renderPass, 
+    VkFramebuffer frameBuffer,
+    VkExtent2D extent
+);
+void submitCommand( VkCommandBuffer commandbuffer, VkQueue presentQueue, VkFence fence, VkSemaphore imageSemaphore,VkSemaphore renderSemaphore);
+
+
+VkFence fhCreateFence(VkDevice device);
+VkSemaphore fhCreateSemaphore(VkDevice device);
+VkPresentInfoKHR fhCreatePresentInfoKHR(VkSwapchainKHR swapChain, VkSemaphore renderSemaphore, uint32_t imageIndex);
+
+
+void fhDeleteSwapChainKHR(VkDevice device, VkSwapchainKHR swapchain);
+void fhDestroypipelineLayout(VkDevice device, VkPipelineLayout layout);
+void fhDestroyRenderPass(VkDevice device, VkRenderPass renderPass);
+void fhDestroyCommandPool(VkDevice device, VkCommandPool commandPool);
+void fhDestroySemaphore(VkDevice device, VkSemaphore semaphore);
+void fhDestroyFence(VkDevice device, VkFence fence);

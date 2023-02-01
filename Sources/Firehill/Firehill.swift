@@ -1,63 +1,52 @@
-import WinSDK
 import CFirehill
+import WinSDK
 
 public class Firehill {
-    var pPipeline : UnsafeMutablePointer<FhPipeline>
+    var pipeline : Pipeline
     var window : FhWindow
-    let deviceManager : UnsafeMutablePointer<FhDeviceManager>
-   // var swapChainManage : SwapChainManager
-    let pipelineLayout : VkPipelineLayout
-    var commandBuffers : Array<VkCommandBuffer>
+    let deviceManager  : Device
+    var swapChainManager : SwapChainManager
+    let commandPool : OpaquePointer
+    let commandBuffer : OpaquePointer
+
+    
     public init() {
         window = fhCreateWindow(600, 800, "Firehill")
-        deviceManager = createDeviceManager(window.pInstance)
-        assert(window.pInstance != nil)
-       // swapChainManage = SwapChainManager()
-        pipelineLayout = fhCreatePipelineLayout(deviceManager.pointee.device)
-        pPipeline = createGraphicsPipeline(
-            deviceManager,
-            pipelineLayout,
-            nil,
-            0,
-            window.height, 
-            window.width, 
-            "Shaders/vert.spv", 
-            "Shaders/frag.spv"
-         )
-        commandBuffers = []
+        deviceManager = Device()
+        swapChainManager = SwapChainManager(physicalDevice: deviceManager.physicalDevice, device: deviceManager.device, instance: deviceManager.instance, window: window.pInstance)
+        pipeline = Pipeline(vertexPath: "Shaders/blued.spv", fragmentPath: "Shaders/frag.spv", device: deviceManager.device, width: window.width, height: window.height, renderPass: swapChainManager.renderPass!, subpass: swapChainManager.subPass)
+        commandPool = fhCreateCommandPool(deviceManager.physicalDevice, deviceManager.device)
+        commandBuffer = fhCreateCommandBuffer(deviceManager.device, commandPool)
+
     }
+
+    public func run(){
+        let fence = swapChainManager.inFlightFences[0]
+        var imageSemaphore = swapChainManager.imageAvailableSemaphores[0]
+        var renderSemaphore = swapChainManager.renderFinishedSemaphores[0]
+        let pointer = swapChainManager.swapChainFrameBuffers.withUnsafeMutableBufferPointer({$0.baseAddress})
+
+        while glfwWindowShouldClose(window.pInstance) == 0 {
+            collectEvents()
+            drawFrame(fence: fence, renderSemaphore: renderSemaphore, imageSemaphore: imageSemaphore, pointer: pointer)
+        }
+        vkDeviceWaitIdle(deviceManager.device);
+    }
+
 
     public func collectEvents(){
         fhCollectEvents()
     }
 
-    public func drawFrame(){}
-}
+    deinit{}
 
-struct SwapChainManager{
-    var swapChainImageFormat   : VkFormat
-    var swapChainExtent        : VkExtent2D
-    var swapChainFrameBuffers  : Array<VkFramebuffer>
-    var swapChainImages        : Array<VkImage>
-    var swapChainImageViews    : Array<VkImageView>
-    
-    var renderPass             : VkRenderPass
-    
-    var depthImages            : Array<VkImage>
-    var depthImagesMemorys     : Array<VkDeviceMemory>
-    var depthImageViews        : Array<VkImageView>
+    public func drawFrame(fence: OpaquePointer, renderSemaphore: OpaquePointer, imageSemaphore: OpaquePointer, pointer: UnsafeMutablePointer<OpaquePointer?>?){
+        //draw(pipeline.pointee.graphicPipeline, swapChainManager.swapChainExtent, swapChainManager.renderPass,  fence, renderSemaphore, imageSemaphore,deviceManager, swapChainManager.swapChain,  commandBuffers, pointer)
 
-    var windowExtent           : VkExtent2D
-    var swapChain              : VkSwapchainKHR
-    var imageAvailableSemaphores : Array<VkSemaphore>
-    var renderFinishedSemaphores : Array<VkSemaphore>
-    var inFlightFences           : Array<VkFence>
-    var imagesInFlight           : Array<VkFence>
-    var currentFrame             : Int
-    var subPass                  : UInt32
-
-    func getNextImage(){
-
+        draw( deviceManager.presentQueue,   pipeline.graphicPipeline, swapChainManager.swapChainExtent, swapChainManager.renderPass, fence, renderSemaphore, imageSemaphore, deviceManager.device, swapChainManager.swapChain,commandBuffer, pointer)
     }
 
+
+
 }
+
