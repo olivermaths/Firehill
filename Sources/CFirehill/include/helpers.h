@@ -4,7 +4,7 @@
 
 bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 bool checkDeviceExtensionSupport(VkPhysicalDevice device, const char *requiredExtension);
-FhQueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+FhQueueFamilyIndices fhFindQueueFamilies(VkPhysicalDevice device);
 
 
 // swapChain

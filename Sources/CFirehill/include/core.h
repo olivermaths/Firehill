@@ -1,12 +1,8 @@
 #pragma once
 #include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <vulkan/vulkan.h>
-#include <glfw/glfw3.h>
 
 
 #ifndef __RELEASE__

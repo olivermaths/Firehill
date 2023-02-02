@@ -12,6 +12,8 @@ VkPipeline fhCreateVkPipeline(
         VkShaderModule fragShader,         
         VkPipelineLayout layout,
         VkRenderPass renderPass,
+        VkVertexInputBindingDescription inputDescription,
+        VkVertexInputAttributeDescription attributeDescription,
         uint32_t subpass,
         uint32_t width,
         uint32_t height 

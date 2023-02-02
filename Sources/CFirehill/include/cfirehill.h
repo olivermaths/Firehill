@@ -1,14 +1,11 @@
 
 
 #include "pipeline.h"
-
 #include "instance.h"
 #include "device.h"
 #include "swapchain.h"
 
 #include "structs.h"
-#include "cwindow.h"
-#include "helpers.h"
 
 
 
@@ -26,18 +23,18 @@ VkSwapchainKHR fhCreateSwapChain(
 );
 
 
-void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRenderPass renderPass, VkFence fence, VkSemaphore renderSemaphore, VkSemaphore imageSemaphore, VkDevice device, VkSwapchainKHR swapChain, VkCommandBuffer commandBuffer, VkFramebuffer *frameBuffers);
+bool draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRenderPass renderPass, VkFence fence, VkSemaphore renderSemaphore, VkSemaphore imageSemaphore, VkDevice device, VkSwapchainKHR swapChain, VkCommandBuffer commandBuffer, VkFramebuffer *frameBuffers, uint32_t imageIndex);
 VkImageViewCreateInfo fhCreateImageViewInfo(VkImage image, VkFormat format);
 
 VkRenderPass fhCreateRenderPass(VkDevice device, VkFormat format);
-
+void fhEndRecord(VkCommandBuffer commandBuffer);
 VkFramebufferCreateInfo fhCreateFrameBufferInfo(VkImageView imageView, VkRenderPass renderPass, VkExtent2D extent);
 
 
 
-VkCommandPool  fhCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device);
+VkCommandPool  fhCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device,  uint32_t presentQueueIndex);
 
-VkCommandBuffer fhCreateCommandBuffer(VkDevice device, VkCommandPool commandPool);
+void fhCreateCommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffer *commnadBuffers, uint32_t count);
 
 void fhRecordCommandBuffer(
     VkPipeline graphicPipeline,

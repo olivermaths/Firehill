@@ -25,7 +25,7 @@ let package = Package(
             ),
         .target(
             name: "Firehill",
-            dependencies: ["CFirehill"]),        
+            dependencies: ["CFirehill", "GLFW"]),        
         .target(
             name: "CFirehill",
             dependencies: [],
@@ -34,6 +34,7 @@ let package = Package(
                 .linkedLibrary("Libs/glfw3")
             ]
             ),
+        .systemLibrary(name: "GLFW"),
         .testTarget(
             name: "FirehillTests",
             dependencies: ["Firehill"]),

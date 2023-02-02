@@ -19,7 +19,9 @@ class Pipeline{
         vertexShader =  fhCreateShaderModule(device, UInt64((vertexData?.count)!),  pVertexData)
         fragShader =  fhCreateShaderModule(device, UInt64((fragData?.count)!),  pFragData)
         pipelineLayout = fhCreatePipelineLayout(device)
-        graphicPipeline = fhCreateVkPipeline( device, vertexShader,   fragShader, pipelineLayout, renderPass, subpass, width, height )
+        var bindingsDescriptions = Model.Vertex<Float>.getBindingDescription()
+        var attributeDescriptions = Model.Vertex<Float>.getAttributeDescription()
+        
+        graphicPipeline = fhCreateVkPipeline( device, vertexShader,   fragShader, pipelineLayout, renderPass, bindingsDescriptions[0], attributeDescriptions[0], subpass, width, height )
     }
-
 }

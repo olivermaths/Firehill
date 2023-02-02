@@ -18,13 +18,12 @@ VkFramebufferCreateInfo fhCreateFrameBufferInfo(VkImageView imageView, VkRenderP
     return framebufferInfo;
 }
 
-VkCommandPool  fhCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device){
+VkCommandPool  fhCreateCommandPool(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t presentQueueIndex){
     VkCommandPool  commandPool;
-    FhQueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     VkCommandPoolCreateInfo poolInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-        .queueFamilyIndex = indices.presentQueueIndex,
+        .queueFamilyIndex = presentQueueIndex,
     };
 
     c_assert(vkCreateCommandPool(device, &poolInfo,NULL, &commandPool) == VK_SUCCESS);
@@ -74,17 +73,15 @@ VkRenderPass fhCreateRenderPass(VkDevice device, VkFormat format){
 };
 
 
-VkCommandBuffer fhCreateCommandBuffer(VkDevice device, VkCommandPool commandPool){
-    VkCommandBuffer commandBuffer;
+void fhCreateCommandBuffer(VkDevice device, VkCommandPool commandPool, VkCommandBuffer *commnadBuffers, uint32_t count){
     VkCommandBufferAllocateInfo allocInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = commandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1
+        .commandBufferCount = count
     };
 
-    c_assert(vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) == VK_SUCCESS);
-    return commandBuffer;
+    c_assert(vkAllocateCommandBuffers(device, &allocInfo, commnadBuffers) == VK_SUCCESS);
 }
 
 void fhRecordCommandBuffer(
@@ -139,31 +136,16 @@ void fhRecordCommandBuffer(
         }
     };
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+}
+
+
+void fhEndRecord(VkCommandBuffer commandBuffer){
     vkCmdEndRenderPass(commandBuffer);
     vkEndCommandBuffer(commandBuffer);
 }
 
 
-void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRenderPass renderPass, VkFence fence, VkSemaphore renderSemaphore, VkSemaphore imageSemaphore, VkDevice device, VkSwapchainKHR swapChain, VkCommandBuffer commandBuffer, VkFramebuffer *frameBuffers){
-
-        vkWaitForFences(device, 1, &fence, 0, UINT64_MAX);
-        
-        uint32_t imageIndex  = 0;
-        vkAcquireNextImageKHR(device,swapChain, UINT64_MAX, imageSemaphore, NULL, &imageIndex);
-
-        vkResetCommandBuffer(commandBuffer, 0);
-        
-        VkFramebuffer frameBuffer = frameBuffers[imageIndex];
-        fhRecordCommandBuffer(
-                    pipeline,
-                    commandBuffer, 
-                    renderPass, 
-                    frameBuffer,
-                    extent
-        );
-        
-        c_assert(vkResetFences(device, 1, &fence) == VK_SUCCESS);
+bool draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRenderPass renderPass, VkFence fence, VkSemaphore renderSemaphore, VkSemaphore imageSemaphore, VkDevice device, VkSwapchainKHR swapChain, VkCommandBuffer commandBuffer, VkFramebuffer *frameBuffers, uint32_t imageIndex){
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         VkSemaphore imageSemaphores[] = {imageSemaphore};
         VkSemaphore renderSemaphores[] = {renderSemaphore};
@@ -178,8 +160,9 @@ void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRende
             .signalSemaphoreCount = 1,
             .pSignalSemaphores = renderSemaphores
         };
-        c_assert(vkQueueSubmit(presentQueue, 1, &submitInfo, fence) == VK_SUCCESS);
-        
+
+         vkQueueSubmit(presentQueue, 1, &submitInfo, fence);
+
         VkSwapchainKHR swaps[] = {swapChain};
         uint32_t indices[] = {imageIndex};
         
@@ -192,7 +175,9 @@ void draw(VkQueue presentQueue,  VkPipeline pipeline, VkExtent2D extent, VkRende
             .pImageIndices = indices,
             .pResults = 0
         };
-        vkQueuePresentKHR(presentQueue, &presentInfo);
+        VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        if(result != VK_SUCCESS ) return false;
+        return true;
 }
 
 

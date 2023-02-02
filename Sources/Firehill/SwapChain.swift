@@ -20,10 +20,11 @@ struct SwapChainManager {
 
     var imageAvailableSemaphores : Array<VkSemaphore>
     var renderFinishedSemaphores : Array<VkSemaphore>
-    var inFlightFences           : Array<VkFence>
+    var inFlightFences           : Array<VkFence?>
     
     var imagesInFlight           : Array<VkFence>?
-    var currentFrame             : Int?
+
+    var currentFrame             : Int
     
     var subPass                  : UInt32
 
@@ -34,10 +35,11 @@ struct SwapChainManager {
         swapChainImages = []
         swapChainImageViews = []
         swapChainFrameBuffers = []
-        inFlightFences = [fhCreateFence(device)]
-        imageAvailableSemaphores = [fhCreateSemaphore(device)]
-        renderFinishedSemaphores = [fhCreateSemaphore(device)]
+        inFlightFences = Array(repeating: fhCreateFence(device), count: 3)
+        imageAvailableSemaphores = Array(repeating: fhCreateSemaphore(device), count: 3)
+        renderFinishedSemaphores = Array(repeating: fhCreateSemaphore(device), count: 3)
         subPass = 0
+        currentFrame = 0
 
 
         withUnsafeMutablePointer(to: &swapChainImageFormat){formatPointer in
@@ -80,7 +82,7 @@ struct SwapChainManager {
 
 
     }
-    func delete(device: VkDevice){
+    func delete(device: OpaquePointer, instance: OpaquePointer){
         fhDeleteSwapChainKHR(device, swapChain)
 
         for (index, imageView) in swapChainImageViews.enumerated(){
@@ -99,14 +101,68 @@ struct SwapChainManager {
         renderFinishedSemaphores.map({
             fhDestroySemaphore(device, $0)
         })
-
         fhDestroyRenderPass(device, renderPass)
+        vkDestroySurfaceKHR(instance, surface, nil)
     }
 
  
 }
 
-protocol SwapChainHelpers{}
-extension SwapChainManager :SwapChainHelpers {
+protocol SwapChainHelpers{
+    mutating func recreateSwapChain(physicalDevice: VkPhysicalDevice, device: OpaquePointer, window: OpaquePointer)
+    mutating func cleanUpSwapChain(device: OpaquePointer)
 
+}
+
+
+extension SwapChainManager : SwapChainHelpers {
+    mutating func recreateSwapChain(physicalDevice: VkPhysicalDevice, device: OpaquePointer, window: OpaquePointer){
+        vkDeviceWaitIdle(device)
+        cleanUpSwapChain(device: device)
+        
+        withUnsafeMutablePointer(to: &swapChainImageFormat){formatPointer in
+            swapChain = nil
+            swapChain =  fhCreateSwapChain(
+                physicalDevice, 
+                device,  
+                surface, 
+                formatPointer, 
+                &swapChainExtent, 
+                window
+            );
+            return;
+        }
+        
+        var count : UInt32 = 0
+        vkGetSwapchainImagesKHR(device, swapChain, &count, nil);
+        
+        swapChainImages.withUnsafeMutableBufferPointer({pointer in
+                vkGetSwapchainImagesKHR(device, swapChain, &count, pointer.baseAddress);
+        })
+        print(count)
+
+
+        for (index, image) in swapChainImages.enumerated(){
+            print("here  \(index)")
+            var createInfo : VkImageViewCreateInfo = fhCreateImageViewInfo(image, swapChainImageFormat)
+            
+            vkCreateImageView(device, &createInfo, nil, UnsafeMutablePointer(&swapChainImageViews[index]))
+            
+            var framebufferInfo =  fhCreateFrameBufferInfo(swapChainImageViews[index], renderPass, swapChainExtent)
+            
+            vkCreateFramebuffer(device, &framebufferInfo, nil, UnsafeMutablePointer(&swapChainFrameBuffers[index]))
+        }
+
+
+    }
+
+    mutating func cleanUpSwapChain(device: OpaquePointer){
+        for frameBuffer in self.swapChainFrameBuffers {
+            vkDestroyFramebuffer(device, frameBuffer, nil)
+        }
+        for imageView in self.swapChainImageViews{
+            vkDestroyImageView(device, imageView, nil)
+        }
+        vkDestroySwapchainKHR(device, self.swapChain, nil)
+    }
 }

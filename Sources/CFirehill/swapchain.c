@@ -1,6 +1,6 @@
 #include "include/cfirehill.h"
 #include "vulkan/vulkan_core.h"
-
+#include "include/helpers.h"
 
 
 VkSurfaceKHR fhCreateVkSurface(VkInstance instance, GLFWwindow *window){
@@ -53,6 +53,67 @@ VkSwapchainKHR fhCreateSwapChain(
     GLFWwindow *window
     ){
     FhSwapChainSupportDetails details = {};
+    querySwapChainSupport(device, surface, &details);
+    
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(details.formats, details.formtCount);
+    
+    VkPresentModeKHR  presetMode = chooseSwapSurfacePresentMode(details.presentModes, details.presentModeCount);
+
+    *extent = chooseSwapExtent(details.capabilities, window);
+    
+    uint32_t imageCount = details.capabilities.minImageCount;
+    
+    if(details.capabilities.maxImageCount > 3){
+        imageCount = 3;
+    }
+    printf("image count %i\n", imageCount);
+
+
+    VkSwapchainCreateInfoKHR infos = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .surface = surface,
+        .minImageCount = imageCount,
+        .imageFormat = surfaceFormat.format,
+        .imageColorSpace = surfaceFormat.colorSpace,
+        .imageExtent = (*extent),
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .preTransform = details.capabilities.currentTransform,
+        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .presentMode = presetMode,
+        .clipped = VK_TRUE,
+        .oldSwapchain = VK_NULL_HANDLE
+    };
+    FhQueueFamilyIndices indices = fhFindQueueFamilies(device);
+    uint32_t queueuIndices[] = {indices.computeQueueIndex, indices.presentQueueIndex};
+    // @Fixme
+    if(indices.computeQueueIndex != indices.presentQueueIndex){
+        infos.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        infos.queueFamilyIndexCount = 2;
+        infos.pQueueFamilyIndices = queueuIndices;
+    }else{
+            infos.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            infos.queueFamilyIndexCount = 0; // Optional
+            infos.pQueueFamilyIndices = NULL; // Optional
+    }
+    VkSwapchainKHR swapChain;
+
+
+    c_assert(vkCreateSwapchainKHR(logicalDevice, &infos,NULL, &swapChain) == VK_SUCCESS);
+    *format = surfaceFormat.format;
+    return swapChain;
+}
+
+
+VkSwapchainKHR fhRecreateSwapChain(
+    VkPhysicalDevice device, 
+    VkDevice logicalDevice, 
+    VkSurfaceKHR surface,
+    VkFormat *format,
+    VkExtent2D *extent,
+    GLFWwindow *window
+    ){
+    FhSwapChainSupportDetails details = {};
     querySwapChainSupport(device,surface, &details);
     
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(details.formats, details.formtCount);
@@ -84,7 +145,7 @@ VkSwapchainKHR fhCreateSwapChain(
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_HANDLE
     };
-    FhQueueFamilyIndices indices = findQueueFamilies(device);
+    FhQueueFamilyIndices indices = fhFindQueueFamilies(device);
     uint32_t queueuIndices[] = {indices.computeQueueIndex, indices.presentQueueIndex};
     // @Fixme
     if(indices.computeQueueIndex != indices.presentQueueIndex){
@@ -103,6 +164,7 @@ VkSwapchainKHR fhCreateSwapChain(
     *format = surfaceFormat.format;
     return swapChain;
 }
+
 
 void fhGetSwapChainImages(VkDevice device, VkSwapchainKHR swapChain, void(*callback)(VkImage)){
     VkImageViewCreateInfo info = {};

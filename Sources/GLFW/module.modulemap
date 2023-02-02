@@ -1,0 +1,4 @@
+module GLFW [system] {
+    umbrella header "shim.h"
+    export *
+}

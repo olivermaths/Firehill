@@ -136,6 +136,8 @@ VkPipeline fhCreateVkPipeline(
         VkShaderModule fragShader,         
         VkPipelineLayout layout,
         VkRenderPass renderPass,
+        VkVertexInputBindingDescription inputDescription,
+        VkVertexInputAttributeDescription attributeDescription,
         uint32_t subpass,
         uint32_t width,
         uint32_t height 
@@ -175,15 +177,20 @@ VkPipeline fhCreateVkPipeline(
         .pDynamicStates = dynamicStates
 
     };
+
+    VkVertexInputBindingDescription   bindings[] = {inputDescription};
+    VkVertexInputAttributeDescription  attributes[] = {attributeDescription};
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexAttributeDescriptionCount = 0,
-        .vertexBindingDescriptionCount = 0,
-        .pVertexAttributeDescriptions = NULL,
-        .pVertexBindingDescriptions = NULL,
+        .vertexAttributeDescriptionCount = 1,
+        .vertexBindingDescriptionCount = 1,
+        .pVertexAttributeDescriptions = attributes,
+        .pVertexBindingDescriptions = bindings,
         .pNext = NULL,
         .flags = 0,
     };
+
+
     VkGraphicsPipelineCreateInfo pipelineInfo= {
 	    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 	    .pNext = NULL,

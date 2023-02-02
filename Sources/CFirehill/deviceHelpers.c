@@ -4,7 +4,7 @@
 #include <stdlib.h>
 
 
-FhQueueFamilyIndices findQueueFamilies(VkPhysicalDevice device){
+FhQueueFamilyIndices fhFindQueueFamilies(VkPhysicalDevice device){
     FhQueueFamilyIndices indices = {
         .presentQueueIndex = UINT32_MAX,
         .computeQueueIndex = UINT32_MAX
@@ -95,7 +95,7 @@ void deleteSwapChainSupportDeletes(FhSwapChainSupportDetails* swainChainSupportD
 
 _Bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface){
     bool result = checkDeviceExtensionSupport(device, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    FhQueueFamilyIndices indices = findQueueFamilies(device);
+    FhQueueFamilyIndices indices = fhFindQueueFamilies(device);
     if(indices.presentQueueIndex == UINT32_MAX || indices.computeQueueIndex == UINT32_MAX){
         result = false;
     };

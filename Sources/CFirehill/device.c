@@ -1,7 +1,10 @@
 #include "include/core.h"
+#include <stdlib.h>
+#include <stdio.h>
 #include "include/structs.h"
 #include "include/helpers.h"
 #include "vulkan/vulkan_core.h"
+#include <signal.h>
 #include <stdint.h>
 
 
@@ -74,3 +77,47 @@ VkQueue fhGetVkQueue(VkDevice device, uint32_t index){
     c_assert(queue != VK_NULL_HANDLE);
     return queue;
 }
+
+
+uint64_t fhFindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties){
+   VkPhysicalDeviceMemoryProperties memProperties;
+   vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+    for (size_t it = 0; it < memProperties.memoryTypeCount; it++){
+         if((typeFilter&(1<<it)) && (memProperties.memoryTypes[it].propertyFlags & properties) ){
+            return it;
+         }
+    }
+    abort();
+    return UINT64_MAX;
+}
+
+
+VkBuffer fhCreateVertexBuffer(VkDevice device, uint64_t size){
+    VkBuffer buffer;
+    VkBufferCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = size,
+        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+    };
+    VkDeviceMemory v; 
+    vkCreateBuffer(device,&createInfo, NULL, &buffer);
+    return buffer;
+}
+
+VkDeviceMemory fhGetDeviceMemory(VkDevice device, VkPhysicalDevice physicalDevice, VkBuffer buffer, uint32_t properties){
+   VkMemoryRequirements requirements;
+   vkGetBufferMemoryRequirements(device,buffer, &requirements);
+   
+    VkDeviceMemory memory;
+    VkMemoryAllocateInfo info = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = requirements.size,
+        .memoryTypeIndex = fhFindMemoryType(physicalDevice, requirements.memoryTypeBits, properties)
+    };
+    vkAllocateMemory(device, &info, NULL, &memory);
+
+    vkBindBufferMemory(device,buffer, memory, 0);
+    return memory;
+}
+
